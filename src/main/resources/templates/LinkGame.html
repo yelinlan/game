@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<script th:src="${'/js/jquery.min.js'}" type="text/javascript"></script>
+<script th:src="${'/js/bootstrap.min.js'}" type="text/javascript"></script>
+<link th:href="${'/css/bootstrap.min.css'}" rel="stylesheet"/>
+
+<script type="text/javascript">
+    count = 0;
+    pos_x = -1;
+    pos_y = -1;
+    pos_a = -1;
+    pos_b = -1;
+    curObj_xy = null;
+    curObj_ab = null;
+
+
+    function pick(curObj, x, y) {
+        if (count == 0) {
+            pos_x = x;
+            pos_y = y;
+            curObj_xy = curObj;
+            $(curObj).css("font-size", "35px");
+        }
+        if (count == 1) {
+            pos_a = x;
+            pos_b = y;
+            curObj_ab = curObj;
+            $(curObj).css("font-size", "35px");
+        }
+        count++;
+        if (count == 2) {
+            var paramMap = {
+                "pos_x": pos_x,
+                "pos_y": pos_y,
+                "pos_a": pos_a,
+                "pos_b": pos_b
+            }
+
+            $.ajax({
+                url: '/main/doLinkGame',
+                type: 'post',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(paramMap),
+                success: function (data) {
+                    if (data.state == 1) {
+                        if (data.infomation == "胜利") {
+                            $("#btn").css("display", "inline");
+                        } else {
+                            $("#btn").css("display", "none");
+                        }
+                        //success
+                        var maze = data.maze;
+                        var row = maze.row;
+                        var col = maze.col;
+                        var conn = maze.conn;
+                        var str = "";
+                        str += (row - 2) + 'X' + (col - 2);
+                        $("#default").html(str);
+                        $("#info").html(data.infomation);
+                        $("#info").css("color", "green");
+                        str = "<table  style='margin: auto'>";
+                        for (var i = 1; i < row - 1; i++) {
+                            str += "<tr>";
+                            for (var j = 1; j < col - 1; j++) {
+                                if (conn[i][j] == ' ') {
+                                    str += "<td >";
+                                    str += conn[i][j];
+                                    str += "</td>";
+                                } else {
+                                    str += "<td onclick='pick(this," + i + "," + j + ")'>";
+                                    str += conn[i][j];
+                                    str += "</td>";
+                                }
+                            }
+                            str += "</tr>";
+                        }
+                        str += " </table>";
+                        $("#maze").html(str);
+                    } else if (data.state == 0) {
+                        $("#info").html(data.infomation);
+                        $("#info").css("color", "red");
+                    } else {
+                        alert("无状态码，真奇怪。")
+                    }
+                    count = 0;
+                    $(curObj_xy).css("font-size", "25px");
+                    $(curObj_ab).css("font-size", "25px");
+                },
+                error: function () {
+                    alert('ERROR')
+                }
+            })
+        }
+    }
+
+    function go() {
+        $.ajax({
+            url: '/main/initLinkGame',
+            type: 'post',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({'size': '10'}),
+            success: function (data) {
+                if (data.state == 1) {
+                    //success
+                    var maze = data.maze;
+                    var row = maze.row;
+                    var col = maze.col;
+                    var conn = maze.conn;
+                    var connTemp = maze.connTemp;
+                    var str = "";
+                    str += (row - 2) + 'X' + (col - 2);
+                    $("#default").html(str);
+                    $("#info").html(data.infomation);
+                    $("#btn").css("display", "none");
+
+                    str = "<table style='margin: auto'  >";
+                    for (var i = 1; i < row - 1; i++) {
+                        str += "<tr>";
+                        for (var j = 1; j < col - 1; j++) {
+                            str += "<td  onclick='pick(this," + i + "," + j + ")'>";
+                            str += conn[i][j];
+                            str += "</td>";
+                        }
+                        str += "</tr>";
+                    }
+                    str += " </table>";
+                    $("#maze").html(str);
+                } else {
+                    alert("无状态码，真奇怪。")
+                }
+            },
+            error: function () {
+                alert('ERROR')
+            }
+        })
+    }
+
+
+</script>
+<head>
+    <meta charset='UTF-8'>
+    <title>LinkGame</title>
+    <style>
+        td{
+            font-family: Arial;
+            font-size: 20px;
+            text-align: center;
+            width: 60px;
+            height: 60px;
+            border: solid lightblue 2px;
+        }
+
+    </style>
+</head>
+<body style="background-color: bisque">
+<div style="text-align: center;"><span style="font-size: 40px;color: #5bc0de">连连看</span></div>
+<div style="text-align: center;"><span id="default" style="font-size: 15px;color: green;">默认</span></div>
+<hr>
+<div style="text-align: center;"><span id="info" style="font-size: 30px;color: green;">默认</span></div>
+<div style="text-align: center;">
+    <button onclick='go()' id="btn" style="display: inline">开始</button>
+</div>
+<div id="maze"></div>
+</body>
+</html>
+
+
+
+
+
+
